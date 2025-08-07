@@ -516,7 +516,7 @@ def slots_spin():
     })
 # ------------------------------- Admin-------------------------------------
 
-admin_uid = 'f2139b89-a3e8-4372-b0f4-d348181c5cf8'
+admin_uid = 'b45544cf-2535-40d3-a087-eb267598be5c'
 
 def is_admin(uid):
     return uid == admin_uid
@@ -610,10 +610,6 @@ PRIZE_POOLS = [1_000_000, 5_000_000, 10_000_000, 15_000_000, 20_000_000]
 logger = logging.getLogger('lottery')
 if not logger.hasHandlers():
     logging.basicConfig(level=logging.INFO)
-
-# Assume you already have these helper functions in your app:
-# get_current_user() -> (uid, user_dict) or (None, None)
-# get_db_connection() -> SQLite connection
 
 class Lottery:
     def __init__(self):
