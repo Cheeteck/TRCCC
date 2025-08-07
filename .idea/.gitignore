@@ -5,4 +5,5 @@
 /mavenHomeManager.xml
 /backend/db_init.py
 /backend/balance_updater.py
+/backend/users.db
 

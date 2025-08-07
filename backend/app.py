@@ -760,7 +760,7 @@ logger.info("Started APScheduler for lottery draw job.")
 
 atexit.register(lambda: scheduler.shutdown())
 
-
+# Idrk
 
 @app.route('/tos')
 def tos_page():
