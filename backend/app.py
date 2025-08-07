@@ -13,8 +13,8 @@ from backend.roulette import roulette_numbers, spin_wheel, calculate_payout
 app = Flask(__name__, static_folder='../frontend', static_url_path='')
 app.secret_key = 'replace_with_a_strong_secret_key'  # Change this!
 
-
-DATABASE = 'users.db'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATABASE = os.path.join(BASE_DIR, 'users.db')
 
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)
