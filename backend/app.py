@@ -8,10 +8,11 @@ from flask import Flask, session, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
-from roulette import roulette_numbers, spin_wheel, calculate_payout
+from .roulette import roulette_numbers, spin_wheel, calculate_payout
 
 app = Flask(__name__, static_folder='../frontend', static_url_path='')
 app.secret_key = 'replace_with_a_strong_secret_key'  # Change this!
+
 
 DATABASE = 'users.db'
 
@@ -778,6 +779,8 @@ def privacy_page():
 @app.route('/leaderboard')
 def leaderboard_route():
     return jsonify({'leaderboard': get_leaderboard()})
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

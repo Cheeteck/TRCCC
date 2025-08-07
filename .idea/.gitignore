@@ -3,3 +3,6 @@
 /workspace.xml
 # Environment-dependent path to Maven home directory
 /mavenHomeManager.xml
+/backend/db_init.py
+/backend/balance_updater.py
+
