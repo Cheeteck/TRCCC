@@ -44,11 +44,13 @@ def init_db():
             password TEXT NOT NULL,
             balance INTEGER NOT NULL DEFAULT 1000,
             last_claim TEXT,
-            daily_streak INTEGER NOT NULL DEFAULT 1
+            daily_streak INTEGER NOT NULL DEFAULT 1,
+            profile_pic TEXT
         )
     ''')
     conn.commit()
     conn.close()
+
 
 init_db()
 
