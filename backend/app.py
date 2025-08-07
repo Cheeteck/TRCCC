@@ -159,7 +159,8 @@ def home():
 
 # ------------------------------------------------------------  Account page -----------------------------------------------
 
-UPLOAD_FOLDER = 'uploads/profile_pics'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads/profile_pics')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -167,12 +168,14 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
 @app.route('/account')
 def account_page():
     uid, user = get_current_user()
     if not user:
         return redirect('/login')
     return send_from_directory(app.static_folder, 'account.html')
+
 
 @app.route('/account/info')
 def account_info():
@@ -188,6 +191,7 @@ def account_info():
         'daily_streak': user['daily_streak'],
         'profile_pic': user['profile_pic']
     })
+
 
 @app.route('/account/upload_pfp', methods=['POST'])
 def upload_profile_pic():
@@ -225,7 +229,7 @@ def upload_profile_pic():
 
         os.remove(temp_path)
 
-        # Update user record
+        # Update user record in DB
         conn = get_db_connection()
         conn.execute('UPDATE users SET profile_pic = ? WHERE uid = ?', (webp_filename, uid))
         conn.commit()
@@ -238,7 +242,7 @@ def upload_profile_pic():
 
 @app.route('/profile_pics/<filename>')
 def serve_profile_pic(filename):
-    return send_from_directory('uploads/profile_pics', filename)
+    return send_from_directory(UPLOAD_FOLDER, filename)
 
 
 from datetime import datetime, timedelta, timezone
@@ -249,14 +253,13 @@ def claim_daily():
     if not user:
         return jsonify({'error': 'Not logged in'}), 401
 
-    now = datetime.now(timezone.utc)  # timezone-aware current UTC datetime
+    now = datetime.now(timezone.utc)
 
     last_claim_str = user['last_claim']
     daily_streak = user['daily_streak']
 
     if last_claim_str:
         last_claim_dt = datetime.fromisoformat(last_claim_str)
-        # Ensure last_claim_dt is timezone-aware in UTC
         if last_claim_dt.tzinfo is None:
             last_claim_dt = last_claim_dt.replace(tzinfo=timezone.utc)
 
@@ -264,7 +267,6 @@ def claim_daily():
 
         if delta < timedelta(hours=24):
             remaining = timedelta(hours=24) - delta
-            # Format remaining nicely hh:mm:ss without microseconds
             remaining_str = str(remaining).split('.')[0]
             return jsonify({
                 'error': f'Claim cooldown active. Try again in {remaining_str}'
@@ -277,7 +279,7 @@ def claim_daily():
     else:
         daily_streak = 1
 
-    reward = 1500 + 1000 * (daily_streak - 1)
+    reward = 1500 + 1000 * (daily_streak -1)
 
     conn = get_db_connection()
     conn.execute(
