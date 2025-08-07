@@ -8,7 +8,7 @@ from flask import Flask, session, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
-from .roulette import roulette_numbers, spin_wheel, calculate_payout
+from backend.roulette import roulette_numbers, spin_wheel, calculate_payout
 
 app = Flask(__name__, static_folder='../frontend', static_url_path='')
 app.secret_key = 'replace_with_a_strong_secret_key'  # Change this!
