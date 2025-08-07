@@ -92,6 +92,7 @@
 
     <br/><br/>
     <button onclick="logout()">Logout</button>
+    <button onclick="deleteOwnAccount()">Delete account</button>
 </div>
 
 <script>
@@ -154,6 +155,26 @@
         update();
         setInterval(update, 1000);
     }
+
+async function deleteOwnAccount() {
+  try {
+    const res = await fetch('/account/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      alert(`Error deleting account: ${err.error || 'Unknown error'}`);
+    } else {
+      alert('Your account was deleted successfully.');
+      window.location.href = '/register.html';  // Or home page or goodbye page
+    }
+  } catch {
+    alert('Network error deleting account');
+  }
+}
+
+
 
     async function claimDaily() {
         const res = await fetch('/account/claim_daily', { method: 'POST' });

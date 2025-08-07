@@ -192,6 +192,22 @@ def account_info():
         'profile_pic': user['profile_pic']
     })
 
+@app.route('/account/delete', methods=['POST'])
+def delete_own_account():
+    uid, user = get_current_user()  # Your authentication helper
+    if not user:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    conn = get_db_connection()
+    conn.execute('DELETE FROM users WHERE uid = ?', (uid,))
+    conn.commit()
+    conn.close()
+
+    session.pop('uid', None)  # Log out after delete
+
+    return jsonify({'message': 'Your account was deleted successfully.'})
+
+
 
 @app.route('/account/upload_pfp', methods=['POST'])
 def upload_profile_pic():
@@ -347,7 +363,7 @@ def snake_eyes_page():
         return redirect('/login')
     return send_from_directory(app.static_folder, 'snake-eyes.html')
 
- # ------------------------------------- Account end -------------------------------------------
+ # ------------------------------------- Snake eyes end -------------------------------------------
 @app.route('/balance')
 def get_balance():
     uid, user = get_current_user()
@@ -500,7 +516,7 @@ def slots_spin():
     })
 # ------------------------------- Admin-------------------------------------
 
-admin_uid = 'b45544cf-2535-40d3-a087-eb267598be5c'
+admin_uid = 'f2139b89-a3e8-4372-b0f4-d348181c5cf8'
 
 def is_admin(uid):
     return uid == admin_uid
