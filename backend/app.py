@@ -518,7 +518,7 @@ def slots_spin():
     })
 # ------------------------------- Admin-------------------------------------
 
-admin_uid = 'b45544cf-2535-40d3-a087-eb267598be5c'
+admin_uid = '6826ecc8-9447-4164-a39e-b7f3d77b2779'
 
 def is_admin(uid):
     return uid == admin_uid
