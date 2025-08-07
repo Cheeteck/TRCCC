@@ -1,0 +1,176 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #121212;
+  color: #f8f5ec;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.container {
+  position: fixed;
+  bottom: 300px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(30, 30, 30, 0.85); /* slightly translucent dark bg */
+  border: 2px solid #a47e3c;
+  border-radius: 20px;
+  padding: 2rem;
+  width: 350px;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); /* subtle golden glow */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 900;
+}
+
+h1 {
+  color: #a47e3c;
+  margin-bottom: 1.5rem;
+}
+
+.balance {
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+}
+
+input[type="number"], select {
+  padding: 0.5rem;
+  font-size: 1rem;
+  margin: 0.5rem 0;
+  width: 80%;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #f8f5ec;
+}
+
+button {
+  background-color: #a47e3c;
+  color: #121212;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+button:hover {
+  background-color: #c19e53;
+}
+
+#result {
+  margin-top: 1.5rem;
+  font-size: 1.1rem;
+  min-height: 30px;
+  color: #f8f5ec;
+}
+
+/* Navbar */
+
+.navbar {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 70px;
+  width: 90vw;
+  max-width: 1000px;
+  background: rgba(0, 0, 0, 0);
+  border-radius: 25px;
+  padding: 0 30px;
+  box-shadow: 0 0 15px rgba(164, 126, 60, 0.7);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(15px);
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center; /* center the nav-container */
+}
+
+.nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* push logo and links to ends */
+  width: 100%;
+  max-width: 900px; /* slightly smaller so it fits well inside navbar */
+  gap: 30px; /* space between logo and links */
+}
+
+.nav-logo {
+  color: #f8f5ec;
+  font-weight: 900;
+  font-size: 1.5rem;
+  text-decoration: none;
+  user-select: none;
+  white-space: nowrap; /* prevent line breaks */
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 20px; /* space between each link */
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links li a {
+  color: #f8f5ec;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-links li a:hover {
+  background-color: #3c3c3c;
+  cursor: pointer;
+}
+
+
+
+// Coinflip
+
+
+#coin {
+  margin: 20px auto;
+  width: 100px;
+  height: 100px;
+  font-size: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #f8f5ec, #a47e3c);
+  box-shadow: 0 0 15px #a47e3c;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  transition: background 0.3s ease;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+.spin {
+  animation: spinCoin 2s ease forwards;
+}
+
+@keyframes spinCoin {
+  0% {
+    transform: rotateY(0deg);
+  }
+  100% {
+    transform: rotateY(1440deg); /* 4 full spins */
+  }
+}
+

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>🎟️ Lottery | Royal CheetCorp Casino</title>
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+
+        .container {
+  position: relative; /* or absolute */
+  top: 200px;
+}
+
+        h1 {
+          color: #a47e3c;
+          margin-bottom: 1rem;
+          font-weight: 800;
+          font-size: 2.2rem;
+        }
+        .info {
+          margin-bottom: 1rem;
+          font-size: 1.15rem;
+          font-weight: 600;
+          color: #a47e3c;
+        }
+        .input-group {
+          margin: 1rem 0;
+        }
+        label {
+          font-weight: 700;
+          font-size: 1.1rem;
+          margin-right: 0.5rem;
+        }
+        input[type="number"] {
+          width: 80px;
+          padding: 0.5rem;
+          font-size: 1.1rem;
+          border-radius: 5px;
+          border: 2px solid #a47e3c;
+          background-color: #3c392f;
+          color: #f8f5ec;
+          text-align: center;
+          transition: border-color 0.3s;
+        }
+        input[type="number"]:focus {
+          outline: none;
+          border-color: #f8f5ec;
+          background-color: #47443b;
+        }
+        button {
+          padding: 0.6rem 1.8rem;
+          font-weight: 700;
+          font-size: 1.1rem;
+          border: none;
+          border-radius: 6px;
+          background-color: #a47e3c;
+          color: #f8f5ec;
+          cursor: pointer;
+          user-select: none;
+          transition: background-color 0.3s;
+          margin-left: 0.5rem;
+        }
+        button:disabled {
+          background-color: #555;
+          cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+          background-color: #8b6f2e;
+        }
+        #message {
+          margin-top: 1rem;
+          min-height: 2rem;
+          font-weight: 600;
+          font-size: 1.1rem;
+        }
+        #userTickets {
+          margin-top: 1.5rem;
+          color: #f8f5ec;
+          font-family: monospace;
+          max-width: 90vw;
+          word-wrap: break-word;
+          text-align: center;
+        }
+
+        @media (max-width: 480px) {
+          input[type="number"] {
+            width: 70px;
+          }
+          button {
+            padding: 0.5rem 1.2rem;
+          }
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="/" class="nav-logo">🏛️ The Royal CheetCorp Casino</a>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/account">Account</a></li>
+            <li><a href="/tos">Terms Of Service</a></li>
+            <li><a href="/privacy">Privacy Policy</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container">
+    <h1>🎟️ Lottery</h1>
+
+    <div class="info" id="prizePool">Current Prize Pool: Loading...</div>
+    <div class="info" id="ticketsLeft">Tickets Left: Loading...</div>
+    <div class="balance">Balance: <span id="balance">Loading...</span> chips</div>
+
+    <div class="input-group">
+        <label for="ticketCount">Buy Tickets:</label>
+        <input type="number" id="ticketCount" min="1" max="100" value="1" />
+        <button id="buyBtn">Buy</button>
+    </div>
+
+    <div id="message"></div>
+
+    <div id="userTickets"></div>
+</div>
+
+<script>
+    const prizePoolEl = document.getElementById('prizePool');
+    const ticketsLeftEl = document.getElementById('ticketsLeft');
+    const messageEl = document.getElementById('message');
+    const userTicketsEl = document.getElementById('userTickets');
+    const buyBtn = document.getElementById('buyBtn');
+    const ticketCountInput = document.getElementById('ticketCount');
+    const balanceNumberEl = document.getElementById('balance');
+
+    const MAX_TICKETS_PER_PURCHASE = 100,000;
+
+    let currentUserTickets = [];
+    let userBalance = 0;
+
+    // Utility to disable buy inputs
+    function disableInputs(disabled) {
+      buyBtn.disabled = disabled;
+      ticketCountInput.disabled = disabled;
+    }
+
+    // Display purchased tickets nicely
+    function displayUserTickets() {
+      if (currentUserTickets.length === 0) {
+        userTicketsEl.textContent = '';
+      } else {
+        userTicketsEl.textContent = `Your tickets for this round: ${currentUserTickets.join(', ')}`;
+      }
+    }
+
+    // Format number with commas
+    function formatNumber(num) {
+      return num.toLocaleString('en-US');
+    }
+
+    // Load user balance and update UI accordingly
+    async function loadBalance() {
+      try {
+        const res = await fetch('/balance');
+        if (!res.ok) throw new Error('Not logged in');
+
+        const data = await res.json();
+        userBalance = data.balance;
+
+        balanceNumberEl.textContent = formatNumber(userBalance);
+
+        // Calculate max tickets affordable by user given ticket price = 150 chips
+        const maxAffordableTickets = Math.floor(userBalance / 150) || 0;
+
+        // Cap max tickets allowed by max purchase limit (100)
+        const maxTicketsAllowed = Math.min(MAX_TICKETS_PER_PURCHASE, maxAffordableTickets);
+
+        // Prevent lowering below 1 to allow valid input
+        ticketCountInput.max = maxTicketsAllowed > 0 ? maxTicketsAllowed : 1;
+
+        disableInputs(maxAffordableTickets === 0);
+
+        messageEl.textContent = '';
+      } catch (err) {
+        balanceNumberEl.textContent = 'Not logged in';
+        disableInputs(true);
+        userTicketsEl.textContent = '';
+        messageEl.textContent = '';
+      }
+    }
+
+    // Load lottery info such as prize pool, tickets left, and user's tickets
+    async function loadLotteryInfo() {
+      try {
+        const res = await fetch('/lottery_status');
+        if (!res.ok) throw new Error('Not logged in or error loading lottery status.');
+
+        const data = await res.json();
+
+        prizePoolEl.textContent = `Current Prize Pool: ${formatNumber(data.prize_pool)} chips`;
+        ticketsLeftEl.textContent = `Tickets Left: ${formatNumber(data.tickets_left)} / 100,000,000`;
+
+        currentUserTickets = Array.isArray(data.user_tickets) ? data.user_tickets : [];
+        displayUserTickets();
+
+        // Calculate max tickets user can buy considering balance and tickets left
+        const maxAffordableTickets = Math.floor(userBalance / 150) || 0;
+        const maxTicketsLeft = data.tickets_left;
+
+        const maxTicketsAvailable = Math.min(MAX_TICKETS_PER_PURCHASE, maxAffordableTickets, maxTicketsLeft);
+
+        ticketCountInput.max = maxTicketsAvailable > 0 ? maxTicketsAvailable : 1;
+
+        disableInputs(maxTicketsAvailable === 0);
+
+        messageEl.textContent = '';
+      } catch (err) {
+        prizePoolEl.textContent = 'Error loading lottery info.';
+        ticketsLeftEl.textContent = '';
+        messageEl.style.color = 'red';
+        messageEl.textContent = err.message || 'Error fetching lottery info.';
+        disableInputs(true);
+      }
+
+      // Always update balance after fetching lottery info to keep UI in sync
+      await loadBalance();
+    }
+
+    // Buy tickets button logic
+    buyBtn.addEventListener('click', async () => {
+      const count = parseInt(ticketCountInput.value);
+      if (isNaN(count) || count < 1 || count > parseInt(ticketCountInput.max)) {
+        alert(`Please enter a valid number of tickets (1 to ${ticketCountInput.max}).`);
+        return;
+      }
+
+      buyBtn.disabled = true;
+      messageEl.style.color = 'black';
+      messageEl.textContent = 'Processing your purchase...';
+
+      try {
+        const res = await fetch('/lottery_buy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: count }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          messageEl.style.color = 'red';
+          messageEl.textContent = data.error || 'Failed to buy tickets.';
+        } else {
+          messageEl.style.color = 'limegreen';
+          messageEl.textContent = `Success! You bought ${count} ticket${count > 1 ? 's' : ''}.`;
+
+          currentUserTickets = currentUserTickets.concat(data.assigned_tickets);
+          displayUserTickets();
+
+          prizePoolEl.textContent = `Current Prize Pool: ${formatNumber(data.prize_pool)} chips`;
+          ticketsLeftEl.textContent = `Tickets Left: ${formatNumber(data.tickets_left)} / 100,000,000`;
+
+          // Recalculate balance and max tickets (balance and tickets left may have changed)
+          await loadBalance();
+
+          if (data.tickets_left === 0) {
+            disableInputs(true);
+            messageEl.textContent += ' All tickets sold for this round!';
+          }
+        }
+      } catch (err) {
+        messageEl.style.color = 'red';
+        messageEl.textContent = 'Error processing purchase. Please try again.';
+      } finally {
+        buyBtn.disabled = false;
+      }
+    });
+
+    // Periodically refresh lottery info and balance every 30 seconds
+    function setupAutoRefresh() {
+      setInterval(() => {
+        loadLotteryInfo();
+      }, 30000);
+    }
+
+    // Initialize page state on load
+    window.onload = () => {
+      loadLotteryInfo(); // This also loads balance
+      setupAutoRefresh();
+    };
+
+</script>
+</body>
+</html>

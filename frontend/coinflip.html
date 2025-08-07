@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Coinflip | Royal CheetCorp Casino</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+        .container {
+  position: relative; /* or absolute */
+  top: 200px;
+}
+        .balance {
+          margin-bottom: 1rem;
+          font-size: 1.2rem;
+          font-weight: 600;
+          color: #a47e3c;
+        }
+        input[type="number"] {
+          width: 100%;
+          padding: 0.5rem;
+          font-size: 1.1rem;
+          border-radius: 5px;
+          border: none;
+          margin-bottom: 1rem;
+          box-sizing: border-box;
+          text-align: center;
+        }
+        button {
+          padding: 0.6rem 2rem;
+          margin: 0 0.5rem;
+          font-size: 1rem;
+          font-weight: bold;
+          border-radius: 5px;
+          border: none;
+          cursor: pointer;
+          background-color: #a47e3c;
+          color: #f8f5ec;
+          transition: background-color 0.3s ease;
+          user-select: none;
+        }
+        button:disabled {
+          background-color: #555;
+          cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+          background-color: #8b6f2e;
+        }
+        #coin {
+          font-size: 6rem;
+          margin: 1.5rem auto;
+          transition: transform 1.5s ease-out;
+          perspective: 1000px;
+          display: inline-block;
+        }
+        #coin.flipping {
+          animation: coin-flip 1.5s ease-out;
+        }
+        @keyframes coin-flip {
+          0%   { transform: rotateY(0deg); }
+          100% { transform: rotateY(720deg); }
+        }
+        #result {
+          min-height: 2rem;
+          font-weight: 600;
+          font-size: 1.1rem;
+          margin-top: 1rem;
+          user-select: none;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="/" class="nav-logo">🏛️ The Royal CheetCorp Casino</a>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/account">Account</a></li>
+            <li><a href="/tos">Terms Of Service</a></li>
+            <li><a href="/privacy">Privacy Policy</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container">
+    <h1>🪙 Coinflip</h1>
+    <div class="balance">Balance: <span id="balance">Loading...</span> chips</div>
+
+    <input
+            type="number"
+            id="betAmount"
+            placeholder="Enter bet amount"
+            min="1"
+            step="1"
+            autocomplete="off"
+    />
+
+    <div>
+        <button id="headsButton" aria-label="Bet on Heads">Heads</button>
+        <button id="tailsButton" aria-label="Bet on Tails">Tails</button>
+    </div>
+
+    <div id="coin" class="coin">🪙</div>
+
+    <div id="result" role="alert" aria-live="polite"></div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const headsBtn = document.getElementById('headsButton');
+      const tailsBtn = document.getElementById('tailsButton');
+      const betInput = document.getElementById('betAmount');
+      const balanceEl = document.getElementById('balance');
+      const resultEl = document.getElementById('result');
+      const coin = document.getElementById('coin');
+
+      let userBalance = 0;
+
+      async function loadBalance() {
+        try {
+          const res = await fetch('/balance');
+          if (res.ok) {
+            const data = await res.json();
+            userBalance = data.balance;
+            balanceEl.textContent = userBalance.toLocaleString();
+            betInput.max = userBalance;
+          } else {
+            balanceEl.textContent = 'Not logged in';
+            disableInputs(true);
+            resultEl.textContent = '';
+          }
+        } catch (err) {
+          balanceEl.textContent = 'Error loading balance';
+          disableInputs(true);
+        }
+      }
+
+      function disableInputs(disabled) {
+        headsBtn.disabled = disabled;
+        tailsBtn.disabled = disabled;
+        betInput.disabled = disabled;
+      }
+
+      function animateCoin(flipResult) {
+        coin.classList.add('flipping');
+        // After animation duration, switch coin side
+        setTimeout(() => {
+          coin.classList.remove('flipping');
+          coin.className = 'coin ' + flipResult; // e.g. 'coin heads' or 'coin tails'
+          // Optionally change coin content emoji here if desired
+        }, 1500);
+      }
+
+      async function flip(choice) {
+        const bet = parseInt(betInput.value);
+        if (isNaN(bet) || bet <= 0) {
+          alert('Please enter a valid bet amount.');
+          return;
+        }
+        if (bet > userBalance) {
+          alert(`Bet cannot exceed your balance (${userBalance} chips).`);
+          return;
+        }
+
+        // Disable inputs while flipping
+        disableInputs(true);
+        resultEl.style.color = '';
+        resultEl.textContent = 'Flipping... Good luck!';
+
+        try {
+          const res = await fetch('/coinflip', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ bet, choice }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            resultEl.style.color = 'red';
+            resultEl.textContent = data.error || 'Error occurred.';
+          } else {
+            userBalance = data.new_balance;
+            balanceEl.textContent = userBalance.toLocaleString();
+
+            animateCoin(data.flip_result);
+
+            resultEl.style.color = data.result === 'win' ? 'limegreen' : 'red';
+            resultEl.textContent = `You ${data.result}! Coin landed on ${data.flip_result}.`;
+          }
+        } catch (error) {
+          resultEl.style.color = 'red';
+          resultEl.textContent = 'Network error. Please try again.';
+        } finally {
+          disableInputs(false);
+        }
+      }
+
+      headsBtn.addEventListener('click', () => flip('heads'));
+      tailsBtn.addEventListener('click', () => flip('tails'));
+
+      loadBalance();
+    });
+</script>
+</body>
+</html>

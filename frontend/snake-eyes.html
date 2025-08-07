@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>🎲 Snake Eyes | Royal CheetCorp Casino</title>
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+
+        .container {
+  position: relative; /* or absolute */
+  top: 200px;
+}
+
+        input[type="number"] {
+          width: 100%;
+          padding: 0.6rem;
+          margin-bottom: 1rem;
+          font-size: 1.2rem;
+          border-radius: 5px;
+          border: none;
+          text-align: center;
+        }
+        button {
+          padding: 0.6rem 2rem;
+          font-size: 1.1rem;
+          border-radius: 5px;
+          border: none;
+          cursor: pointer;
+          background: #a47e3c;
+          color: #f8f5ec;
+          margin: 0.5rem;
+          font-weight: bold;
+          transition: background-color 0.3s ease;
+        }
+        button:disabled {
+          background: #555;
+          cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+          background: #8b6f2e;
+        }
+        #diceResult {
+          font-size: 5rem;
+          margin-top: 1rem;
+        }
+        #resultMessage {
+          margin-top: 1rem;
+          font-size: 1.2rem;
+          font-weight: bold;
+          min-height: 2rem;
+        }
+        .balance {
+          font-size: 1.3rem;
+          color: #a47e3c;
+          margin-bottom: 1rem;
+        }
+        .info {
+          font-size: 0.9rem;
+          color: #ddd;
+          margin-top: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="/" class="nav-logo">🏛️ The Royal CheetCorp Casino</a>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/account">Account</a></li>
+            <li><a href="/tos">Terms Of Service</a></li>
+            <li><a href="/privacy">Privacy Policy</a></li>
+        </ul>
+    </div>
+</nav>
+<div class="container">
+    <h1>🎲 Snake Eyes</h1>
+    <div class="balance">Balance: <span id="balance">Loading...</span> chips</div>
+    <input type="number" id="betAmount" placeholder="Enter your bet" min="1" step="1" />
+    <button id="rollBtn">Roll Dice</button>
+    <div id="diceResult"></div>
+    <div id="resultMessage"></div>
+    <div class="info">
+        Bet: ₡  <span id="currentBet">0</span> | Payouts: 1 eye (1.25:1), 2 eyes (12:1)
+    </div>
+</div>
+
+<script>
+    const balanceEl = document.getElementById('balance');
+    const betInput = document.getElementById('betAmount');
+    const rollBtn = document.getElementById('rollBtn');
+    const diceResult = document.getElementById('diceResult');
+    const resultMessage = document.getElementById('resultMessage');
+    const currentBetEl = document.getElementById('currentBet');
+
+    let userBalance = 0;
+
+    const diceEmojis = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+
+    async function loadBalance() {
+      try {
+        const res = await fetch('/balance');
+        if (!res.ok) throw new Error('Not logged in');
+        const data = await res.json();
+        userBalance = data.balance;
+        balanceEl.textContent = userBalance.toLocaleString();
+        betInput.max = userBalance;
+        rollBtn.disabled = false;
+      } catch (err) {
+        balanceEl.textContent = 'Not logged in';
+        rollBtn.disabled = true;
+      }
+    }
+
+    rollBtn.addEventListener('click', async () => {
+      const bet = parseInt(betInput.value);
+      if (isNaN(bet) || bet <= 0) {
+        alert('Please enter a valid bet amount.');
+        return;
+      }
+      if (bet > userBalance) {
+        alert('Bet cannot exceed your balance.');
+        return;
+      }
+      rollBtn.disabled = true;
+      betInput.disabled = true;
+      diceResult.textContent = '';
+      resultMessage.textContent = '';
+      currentBetEl.textContent = bet.toLocaleString();
+
+      try {
+        const res = await fetch('/snake_eyes_roll', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ bet }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          resultMessage.style.color = 'red';
+          resultMessage.textContent = data.error || 'Error processing your bet.';
+        } else {
+          userBalance = data.new_balance;
+          balanceEl.textContent = userBalance.toLocaleString();
+
+          diceResult.textContent = diceEmojis[data.dice1 - 1] + ' ' + diceEmojis[data.dice2 - 1];
+
+          if (data.win) {
+            resultMessage.style.color = 'limegreen';
+            resultMessage.textContent = `You won ${data.payout.toLocaleString()} chips! (×${data.multiplier})`;
+          } else {
+            resultMessage.style.color = 'red';
+            resultMessage.textContent = `You lost ${bet.toLocaleString()} chips. Try again!`;
+          }
+        }
+      } catch (e) {
+        resultMessage.style.color = 'red';
+        resultMessage.textContent = 'Network or server error. Please try again.';
+      } finally {
+        rollBtn.disabled = false;
+        betInput.disabled = false;
+      }
+    });
+
+    window.onload = loadBalance;
+</script>
+</body>
+</html>

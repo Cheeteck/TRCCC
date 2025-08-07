@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Account | Royal CheetCorp Casino</title>
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+        /* Container top spacing */
+        .container {
+          position: relative;
+          top: 200px;
+        }
+
+        /* Profile pic styling and centering */
+        #profile-pic {
+          width: 120px;
+          height: 120px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 3px solid #a47e3c;
+          margin: 0 auto 1rem auto;
+          display: block;
+          box-shadow: 0 0 8px #a47e3caa;
+        }
+
+        /* Hide the real file input */
+        #pfp-upload {
+          display: none;
+        }
+
+        /* Custom upload button (just label now) */
+        #upload-label {
+          display: inline-block;
+          background-color: #a47e3c;
+          color: #f8f5ec;
+          padding: 0.5rem 1.2rem;
+          border-radius: 5px;
+          cursor: pointer;
+          font-weight: bold;
+          transition: background-color 0.3s ease;
+          user-select: none;
+        }
+        #upload-label:hover {
+          background-color: #8b6f2e;
+        }
+
+        #upload-status {
+          margin-top: 0.5rem;
+          min-height: 1.5em;
+          text-align: center;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="/" class="nav-logo">🏛️ The Royal CheetCorp Casino</a>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/account">Account</a></li>
+            <li><a href="/tos">Terms Of Service</a></li>
+            <li><a href="/privacy">Privacy Policy</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container">
+    <h2>Account Details</h2>
+
+    <img id="profile-pic" src="/default.webp" alt="Profile Picture" />
+
+    <div id="upload-section">
+        <!-- Custom label triggers hidden file input -->
+        <label id="upload-label" for="pfp-upload">Choose Image</label>
+        <input type="file" id="pfp-upload" accept="image/*" />
+        <div id="upload-status"></div>
+    </div>
+
+    <p>Username: <span id="username"></span></p>
+    <p>Balance: <span id="balance"></span> chips</p>
+    <p>Last daily claim: <span id="lastClaim"></span></p>
+
+    <div id="dailySection">
+        <button id="claimBtn">🎁 Claim Daily Chips</button>
+        <span id="cooldownTimer" style="display:none; color: gray;"></span>
+    </div>
+
+    <div id="claimResult"></div>
+
+    <br/><br/>
+    <button onclick="logout()">Logout</button>
+</div>
+
+<script>
+    const pfpInput = document.getElementById('pfp-upload');
+    const uploadStatus = document.getElementById('upload-status');
+
+    async function fetchAccountInfo() {
+        const res = await fetch('/account/info');
+        if (!res.ok) {
+            return window.location.href = '/login';
+        }
+
+        const data = await res.json();
+        document.getElementById('username').innerText = data.username;
+        document.getElementById('balance').innerText = data.balance.toLocaleString();
+        document.getElementById('lastClaim').innerText = data.last_claim ? new Date(data.last_claim).toLocaleString() : 'Never';
+
+        document.getElementById('profile-pic').src = data.profile_pic
+          ? `/profile_pics/${data.profile_pic}?t=${Date.now()}`
+          : '/default.webp';
+
+        const claimBtn = document.getElementById('claimBtn');
+        const cooldown = document.getElementById('cooldownTimer');
+        const lastClaimTime = data.last_claim ? new Date(data.last_claim) : null;
+        const now = new Date();
+
+        if (lastClaimTime && (now - lastClaimTime) < 24 * 60 * 60 * 1000) {
+            const remaining = 24 * 60 * 60 * 1000 - (now - lastClaimTime);
+            claimBtn.style.display = 'none';
+            cooldown.style.display = 'inline';
+
+            const endTime = new Date(now.getTime() + remaining);
+            updateTimer(endTime);
+        } else {
+            claimBtn.style.display = 'inline-block';
+            cooldown.style.display = 'none';
+        }
+    }
+
+    function updateTimer(endTime) {
+        const timer = document.getElementById('cooldownTimer');
+
+        function update() {
+            const now = new Date();
+            const remaining = endTime - now;
+
+            if (remaining <= 0) {
+                timer.style.display = 'none';
+                document.getElementById('claimBtn').style.display = 'inline-block';
+                fetchAccountInfo(); // Refresh data
+                return;
+            }
+
+            const hours = Math.floor(remaining / (1000 * 60 * 60));
+            const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+            timer.textContent = `⏳ Claim available in ${hours}h ${minutes}m ${seconds}s`;
+        }
+
+        update();
+        setInterval(update, 1000);
+    }
+
+    async function claimDaily() {
+        const res = await fetch('/account/claim_daily', { method: 'POST' });
+        const resultDiv = document.getElementById('claimResult');
+        if (res.ok) {
+            const data = await res.json();
+            resultDiv.style.color = 'limegreen';
+            resultDiv.innerText = data.message;
+        } else {
+            const err = await res.json();
+            resultDiv.style.color = 'red';
+            resultDiv.innerText = err.error || 'Claim failed';
+        }
+        fetchAccountInfo();
+    }
+
+    async function logout() {
+        await fetch('/logout', { method: 'POST' });
+        window.location.href = '/login';
+    }
+
+    document.getElementById('claimBtn').addEventListener('click', claimDaily);
+
+    // Upload profile picture immediately on file selection
+    pfpInput.addEventListener('change', async () => {
+        if (!pfpInput.files.length) return;
+
+        const file = pfpInput.files[0];
+        const formData = new FormData();
+        formData.append('profile_pic', file);
+
+        uploadStatus.style.color = 'black';
+        uploadStatus.textContent = 'Uploading...';
+
+        try {
+            const res = await fetch('/account/upload_pfp', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (res.ok) {
+                uploadStatus.style.color = 'limegreen';
+                uploadStatus.textContent = 'Profile picture updated!';
+                pfpInput.value = '';
+                fetchAccountInfo();
+            } else {
+                const err = await res.json();
+                uploadStatus.style.color = 'red';
+                uploadStatus.textContent = err.error || 'Upload failed';
+            }
+        } catch (err) {
+            uploadStatus.style.color = 'red';
+            uploadStatus.textContent = 'Upload failed: ' + err.message;
+        }
+    });
+
+    window.onload = fetchAccountInfo;
+</script>
+</body>
+</html>

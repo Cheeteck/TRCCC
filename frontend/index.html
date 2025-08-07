@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>🏛️ Royal CheetCorp Casino</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+
+        .container {
+  position: relative; /* or absolute */
+  top: 200px;
+}
+
+
+        /* Small style for leaderboard */
+        #leaderboard {
+          margin-top: 2rem;
+          text-align: left;
+          max-width: 600px; /* wider box so names can stretch */
+        }
+        #leaderboard h2 {
+          color: #a47e3c;
+          margin-bottom: 0.5rem;
+        }
+        #leaderboard ol {
+          padding-left: 0;
+          list-style: none;
+        }
+        #leaderboard li {
+          display: flex;
+          align-items: center;
+          margin-bottom: 0.6rem;
+          font-size: 1.1rem;
+          color: #f8f5ec;
+          word-break: break-word;
+        }
+        #leaderboard li img {
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          margin-right: 1rem;
+          vertical-align: middle;
+          box-shadow: 0 0 8px 2px transparent; /* default no glow */
+          transition: box-shadow 0.3s ease;
+        }
+        #user-info {
+          margin-bottom: 1rem;
+          font-weight: 600;
+          color: #f8f5ec;
+        }
+        button {
+          margin: 0.25rem;
+          cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="/" class="nav-logo">🏛️ The Royal CheetCorp Casino</a>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/account">Account</a></li>
+            <li><a href="/tos">Terms Of Service</a></li>
+            <li><a href="/privacy">Privacy Policy</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container">
+    <h1>👑 The Royal 👑 CheetCorp Casino</h1>
+
+    <div id="user-info"></div>
+
+    <p>Welcome, dear guest!</p>
+
+    <a href="/coinflip"><button>🪙 Coinflip</button></a>
+    <a href="/snake-eyes"><button>Snake Eyes</button></a>
+    <a href="/slots"><button>Slots Machine</button></a>
+    <a href="/lottery"><button>🎟️Lottery</button></a>
+
+    <div id="leaderboard">
+        <h2>🏆 Leaderboard</h2>
+        <ol id="leaderboard-list"></ol>
+    </div>
+
+    <div id="adminConsole" style="display:none; margin-top:2rem; border: 2px solid #a47e3c; padding: 1rem; background:#2c2a26; color:#f8f5ec; max-width: 800px; overflow-y: auto; max-height: 600px;">
+        <h2>Admin Console</h2>
+        <div id="adminUsers">Loading admin data...</div>
+        <button id="confirmChangesBtn" style="margin-top: 1rem; padding: 0.5rem 1rem; font-weight: 700; background-color: #a47e3c; color: #f8f5ec; border:none; border-radius: 6px; cursor: pointer;">
+            Confirm Changes
+        </button>
+        <div id="adminMessage" style="margin-top: 1rem;"></div>
+    </div>
+
+
+</div>
+
+<! Admin console -->
+<script>
+    const adminUID = 'b45544cf-2535-40d3-a087-eb267598be5c';
+const adminConsole = document.getElementById('adminConsole');
+const adminUsersDiv = document.getElementById('adminUsers');
+const confirmChangesBtn = document.getElementById('confirmChangesBtn');
+const adminMessage = document.getElementById('adminMessage');
+
+let usersData = []; // will hold current loaded user data (loaded from backend)
+let pendingUpdates = {}; // { uid: { field1: val1, field2: val2 } }
+
+// Fetch current user UID by calling your existing /account/info
+async function getCurrentUserUID() {
+  try {
+    const res = await fetch('/account/info');
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.uid || null;
+  } catch {
+    return null;
+  }
+}
+
+// Fetch all users from admin endpoint
+async function fetchAllUsers() {
+  const res = await fetch('/admin/all_users');
+  if (!res.ok) {
+    adminUsersDiv.textContent = 'Failed to load users.';
+    return [];
+  }
+  return await res.json();
+}
+
+// Delete a user via admin endpoint
+async function deleteUser(uid) {
+  try {
+    const res = await fetch('/admin/delete_user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      alert(`Error deleting user: ${err.error || 'Unknown error'}`);
+    } else {
+      await loadAdminUsers();
+    }
+  } catch {
+    alert('Network error deleting user');
+  }
+}
+
+// Load and render all users (calls fetch and render)
+async function loadAdminUsers() {
+  const users = await fetchAllUsers();
+  renderUsers(users);
+}
+
+// Render users with inputs and set up event listeners
+function renderUsers(users) {
+  usersData = users;
+  pendingUpdates = {};
+
+  adminUsersDiv.innerHTML = '';
+  users.forEach((user) => {
+    const userDiv = document.createElement('div');
+    userDiv.style.borderBottom = '1px solid #a47e3c';
+    userDiv.style.paddingBottom = '1rem';
+    userDiv.style.marginBottom = '1rem';
+
+    let lastClaimLocal = '';
+    if (user.last_claim) {
+      const d = new Date(user.last_claim);
+      lastClaimLocal = d.toISOString().slice(0, 16);
+    }
+
+    userDiv.innerHTML = `
+      <strong>Username:</strong> ${user.username} <br/>
+      <strong>UID:</strong> ${user.uid} <br/>
+      <label>Balance: <input type="number" value="${user.balance}" min="0" data-uid="${user.uid}" data-field="balance" class="editableInput"/></label><br/>
+      <label>Last Claim: <input type="datetime-local" value="${lastClaimLocal}" data-uid="${user.uid}" data-field="last_claim" class="editableInput"/></label><br/>
+      <label>Daily Streak: <input type="number" value="${user.daily_streak}" min="0" data-uid="${user.uid}" data-field="daily_streak" class="editableInput"/></label><br/>
+      <button data-uid="${user.uid}" class="deleteBtn" style="background:#b22222; color:white; border:none;
+        padding:4px 8px; border-radius:4px; cursor:pointer;">Delete Account</button>
+    `;
+    adminUsersDiv.appendChild(userDiv);
+  });
+
+  // Gather pending changes on input edits — mark changes locally
+  adminUsersDiv.querySelectorAll('.editableInput').forEach((input) => {
+    input.addEventListener('input', (e) => {
+      const uid = e.target.dataset.uid;
+      const field = e.target.dataset.field;
+      let val = e.target.value;
+
+      // Validate inputs
+      if (field === 'balance' || field === 'daily_streak') {
+        val = parseInt(val);
+        if (isNaN(val) || val < 0) {
+          adminMessage.style.color = 'red';
+          adminMessage.textContent = `Invalid value for ${field} on user ${uid}`;
+          return;
+        }
+      } else if (field === 'last_claim') {
+        val = val ? new Date(val).toISOString() : null;
+      }
+
+      if (!pendingUpdates[uid]) {
+        pendingUpdates[uid] = {};
+      }
+      pendingUpdates[uid][field] = val;
+
+      adminMessage.textContent = '';
+    });
+  });
+
+  // Immediate delete buttons
+  adminUsersDiv.querySelectorAll('.deleteBtn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      const uid = e.target.dataset.uid;
+      if (confirm(`Are you sure you want to delete user with UID ${uid}? This cannot be undone.`)) {
+        await deleteUser(uid);
+      }
+    });
+  });
+}
+
+// Send batched updates to backend when confirm button clicked
+async function confirmChanges() {
+  if (Object.keys(pendingUpdates).length === 0) {
+    adminMessage.style.color = 'blue';
+    adminMessage.textContent = 'No changes to confirm.';
+    return;
+  }
+
+  adminMessage.style.color = 'black';
+  adminMessage.textContent = 'Saving changes...';
+  confirmChangesBtn.disabled = true;
+
+  try {
+    for (const uid of Object.keys(pendingUpdates)) {
+      const data = pendingUpdates[uid];
+
+      const res = await fetch('/admin/update_user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid, ...data }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        adminMessage.style.color = 'red';
+        adminMessage.textContent = `Error updating user ${uid}: ${err.error || 'Unknown error'}`;
+        confirmChangesBtn.disabled = false;
+        return;
+      }
+    }
+
+    pendingUpdates = {};
+    adminMessage.style.color = 'limegreen';
+    adminMessage.textContent = 'All changes saved successfully.';
+    await loadAdminUsers();
+  } catch (error) {
+    adminMessage.style.color = 'red';
+    adminMessage.textContent = `Network error saving changes: ${error.message}`;
+  } finally {
+    confirmChangesBtn.disabled = false;
+  }
+}
+
+confirmChangesBtn.addEventListener('click', confirmChanges);
+
+
+// Initialize admin console: show and load if current user is admin
+async function initAdminConsole() {
+  const currentUID = await getCurrentUserUID();
+  if (currentUID === adminUID) {
+    adminConsole.style.display = 'block';
+    await loadAdminUsers();
+  }
+}
+
+// Run initialization on page load
+window.addEventListener('DOMContentLoaded', () => {
+  initAdminConsole();
+});
+
+</script>
+
+<script>
+    function getDominantColor(img, callback) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        ctx.drawImage(img, 0, 0);
+
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+        let r = 0, g = 0, b = 0, count = 0;
+        for (let i = 0; i < data.length; i += 40) {
+            r += data[i];
+            g += data[i + 1];
+            b += data[i + 2];
+            count++;
+        }
+
+        r = Math.floor(r / count);
+        g = Math.floor(g / count);
+        b = Math.floor(b / count);
+
+        callback(`rgb(${r},${g},${b})`);
+    }
+
+    async function checkLogin() {
+        const res = await fetch('/account/info');
+        if (!res.ok) {
+            window.location.href = '/register.html';
+            return;
+        }
+        const data = await res.json();
+        fetchLeaderboard();
+        showUserInfo(data);
+    }
+
+    function showUserInfo(data) {
+        const userInfo = document.getElementById('user-info');
+        const authButtons = document.getElementById('auth-buttons');
+
+        const img = document.createElement('img');
+        img.src = data.profile_pic ? `/profile_pics/${data.profile_pic}?t=${Date.now()}` : '/default.webp';
+        img.alt = 'Your profile picture';
+        img.width = 50;
+        img.height = 50;
+        img.style.borderRadius = '50%';
+        img.style.marginRight = '1rem';
+        img.style.verticalAlign = 'middle';
+
+        img.onload = () => {
+            getDominantColor(img, color => {
+                img.style.boxShadow = `0 0 12px 4px ${color}`;
+            });
+        };
+
+        const text = document.createTextNode(`Your balance: ${data.balance.toLocaleString()} chips`);
+        userInfo.innerHTML = '';
+        userInfo.appendChild(img);
+        userInfo.appendChild(text);
+
+        authButtons.innerHTML = '<button id="logout-btn">Logout</button>';
+        document.getElementById('logout-btn').onclick = async () => {
+            await fetch('/logout', { method: 'POST' });
+            window.location.href = '/login.html';
+        };
+    }
+
+    async function fetchLeaderboard() {
+        const res = await fetch('/leaderboard');
+        if (!res.ok) return;
+        const data = await res.json();
+        const list = document.getElementById('leaderboard-list');
+        list.innerHTML = '';
+
+        data.leaderboard.forEach(user => {
+            const li = document.createElement('li');
+
+            const img = document.createElement('img');
+            img.src = user.profile_pic ? `/profile_pics/${user.profile_pic}?t=${Date.now()}` : '/default.webp';
+            img.alt = `${user.username}'s profile picture`;
+
+            img.onload = () => {
+                getDominantColor(img, color => {
+                    img.style.boxShadow = `0 0 12px 4px ${color}`;
+                });
+            };
+
+            const text = document.createTextNode(`${user.username}: ${user.balance.toLocaleString()} chips`);
+            li.appendChild(img);
+            li.appendChild(text);
+            list.appendChild(li);
+        });
+    }
+
+    checkLogin();
+</script>
+</body>
+</html>

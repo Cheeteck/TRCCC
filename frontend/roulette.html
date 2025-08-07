@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Roulette | Royal CheetCorp Casino</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+        /* Container styles */
+        .container {
+          position: fixed;
+          bottom: 50px;
+          left: 50%;
+          transform: translateX(-50%);
+          background-color: rgba(30, 30, 30, 0.85);
+          border: 2px solid #a47e3c;
+          border-radius: 20px;
+          padding: 2rem;
+          width: 400px;
+          text-align: center;
+          box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          z-index: 900;
+          color: #f8f5ec;
+        }
+
+        h1 {
+          color: #a47e3c;
+          margin-bottom: 1rem;
+        }
+
+        /* Canvas for roulette wheel */
+        #rouletteCanvas {
+          margin: 0 auto 1.5rem;
+          display: block;
+          background: #121212;
+          border: 3px solid #a47e3c;
+          border-radius: 50%;
+          box-shadow: 0 0 15px #a47e3c;
+        }
+
+        /* Inputs and buttons */
+        input[type=number], input[type=text] {
+          width: 80%;
+          padding: 0.5rem;
+          border-radius: 8px;
+          border: none;
+          outline: none;
+          background-color: rgba(255, 255, 255, 0.1);
+          color: #f8f5ec;
+          font-size: 1rem;
+          margin-bottom: 1rem;
+        }
+
+        button {
+          background-color: #a47e3c;
+          color: #121212;
+          border: none;
+          padding: 0.6rem 1.2rem;
+          border-radius: 10px;
+          font-weight: bold;
+          cursor: pointer;
+          margin-top: 1rem;
+          transition: background-color 0.2s ease;
+          width: 100%;
+        }
+        button:hover {
+          background-color: #c19e53;
+        }
+
+        #result {
+          margin-top: 1.5rem;
+          font-size: 1.1rem;
+          min-height: 40px;
+          white-space: pre-line;
+          color: #f8f5ec;
+        }
+
+        #balance {
+          font-weight: bold;
+          margin-bottom: 1rem;
+          font-size: 1.2rem;
+        }
+
+        /* Modern toggle checkboxes */
+        .checkbox-group label {
+          position: relative;
+          padding-left: 40px;
+          margin-right: 15px;
+          cursor: pointer;
+          user-select: none;
+          display: inline-block;
+          font-weight: 600;
+          font-size: 0.95rem;
+        }
+        .checkbox-group input[type="checkbox"] {
+          position: absolute;
+          opacity: 0;
+          cursor: pointer;
+          height: 0;
+          width: 0;
+        }
+        .checkbox-group label::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          height: 22px;
+          width: 40px;
+          background-color: #3c3c3c;
+          border-radius: 12px;
+          transition: background-color 0.3s ease;
+          box-shadow: inset 0 0 5px #222;
+        }
+        .checkbox-group label::after {
+          content: "";
+          position: absolute;
+          left: 3px;
+          top: 50%;
+          transform: translateY(-50%);
+          height: 16px;
+          width: 16px;
+          background-color: #a47e3c;
+          border-radius: 50%;
+          transition: transform 0.3s ease;
+          box-shadow: 0 0 6px #a47e3c;
+        }
+        .checkbox-group input[type="checkbox"]:checked + label::before {
+          background-color: #a47e3c;
+          box-shadow: 0 0 8px #d4af37;
+        }
+        .checkbox-group input[type="checkbox"]:checked + label::after {
+          transform: translate(20px, -50%);
+          background-color: #f8f5ec;
+          box-shadow: 0 0 10px #f8f5ec;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="/" class="nav-logo">🏛️ The Royal CheetCorp Casino</a>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/coinflip">Coinflip</a></li>
+            <li><a href="/account">Account</a></li>
+            <li><a href="/roulette">Roulette</a></li>
+        </ul>
+    </div>
+</nav>
+<div class="container">
+    <h1>🎡 Roulette</h1>
+    <canvas id="rouletteCanvas" width="300" height="300"></canvas>
+    <div>Balance: <span id="balance">Loading...</span> chips</div>
+
+    <input type="number" id="betAmount" min="1" placeholder="Enter bet" />
+
+    <div class="bets-section">
+        <div>
+            <label for="numberBet"><strong>Number (0-36):</strong></label>
+            <input type="text" id="numberBet" placeholder="Comma separated e.g. 7,13,25" />
+        </div>
+        <div>
+            <strong>Color:</strong><br />
+            <div class="checkbox-group">
+                <input type="checkbox" id="color-red" name="color" value="red" />
+                <label for="color-red">Red</label>
+
+                <input type="checkbox" id="color-black" name="color" value="black" />
+                <label for="color-black">Black</label>
+
+                <input type="checkbox" id="color-green" name="color" value="green" />
+                <label for="color-green">Green (0)</label>
+            </div>
+        </div>
+        <div>
+            <strong>Odd / Even:</strong><br />
+            <div class="checkbox-group">
+                <input type="checkbox" id="evenodd-odd" name="evenodd" value="odd" />
+                <label for="evenodd-odd">Odd</label>
+
+                <input type="checkbox" id="evenodd-even" name="evenodd" value="even" />
+                <label for="evenodd-even">Even</label>
+            </div>
+        </div>
+    </div>
+
+    <button id="spinBtn">Spin</button>
+
+    <div id="result"></div>
+</div>
+
+<script>
+    const rouletteNumbers = [
+      {num: 0, color: 'green'}, {num: 32, color: 'red'}, {num: 15, color: 'black'},
+      {num: 19, color: 'red'}, {num: 4, color: 'black'}, {num: 21, color: 'red'},
+      {num: 2, color: 'black'}, {num: 25, color: 'red'}, {num: 17, color: 'black'},
+      {num: 34, color: 'red'}, {num: 6, color: 'black'}, {num: 27, color: 'red'},
+      {num: 13, color: 'black'}, {num: 36, color: 'red'}, {num: 11, color: 'black'},
+      {num: 30, color: 'red'}, {num: 8, color: 'black'}, {num: 23, color: 'red'},
+      {num: 10, color: 'black'}, {num: 5, color: 'red'}, {num: 24, color: 'black'},
+      {num: 16, color: 'red'}, {num: 33, color: 'black'}, {num: 1, color: 'red'},
+      {num: 20, color: 'black'}, {num: 14, color: 'red'}, {num: 31, color: 'black'},
+      {num: 9, color: 'red'}, {num: 22, color: 'black'}, {num: 18, color: 'red'},
+      {num: 29, color: 'black'}, {num: 7, color: 'red'}, {num: 28, color: 'black'},
+      {num: 12, color: 'red'}, {num: 35, color: 'black'}, {num: 3, color: 'red'},
+      {num: 26, color: 'black'}
+    ];
+
+    const colorsMap = {
+      red: '#d94141',
+      black: '#222',
+      green: '#3ea655'
+    };
+
+    const canvas = document.getElementById('rouletteCanvas');
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(centerX, centerY) - 10;
+    const ballRadius = 8;
+
+    let startAngle = 0; // wheel rotation angle
+    let ballAngle = 0;  // ball angle, will move opposite to wheel
+
+    const arc = (2 * Math.PI) / rouletteNumbers.length;
+
+    function drawWheel() {
+      ctx.clearRect(0, 0, width, height);
+
+      // Draw wheel segments
+      for(let i=0; i<rouletteNumbers.length; i++) {
+        const angle = startAngle + i * arc;
+        ctx.beginPath();
+        ctx.fillStyle = colorsMap[rouletteNumbers[i].color] || '#444';
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, angle, angle + arc, false);
+        ctx.lineTo(centerX, centerY);
+        ctx.fill();
+
+        // Draw number text
+        ctx.save();
+        ctx.fillStyle = '#f8f5ec';
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle + arc / 2);
+        ctx.textAlign = "right";
+        ctx.font = 'bold 14px Segoe UI, sans-serif';
+        ctx.fillText(rouletteNumbers[i].num, radius - 10, 5);
+        ctx.restore();
+      }
+
+      // Center circle
+      ctx.beginPath();
+      ctx.fillStyle = '#121212';
+      ctx.arc(centerX, centerY, 40, 0, 2 * Math.PI);
+      ctx.fill();
+
+
+
+      // Draw ball on rim (opposite direction)
+      const ballPosAngle = ballAngle;
+      const ballX = centerX + (radius - 15) * Math.cos(ballPosAngle);
+      const ballY = centerY + (radius - 15) * Math.sin(ballPosAngle);
+      ctx.beginPath();
+      ctx.fillStyle = '#f8f5ec';
+      ctx.shadowColor = '#fff';
+      ctx.shadowBlur = 10;
+      ctx.arc(ballX, ballY, ballRadius, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    function easeOut(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function spinWheel(callback) {
+      const spins = 6 + Math.floor(Math.random() * 5); // spins 6-10 times
+      const totalRotation = spins * 2 * Math.PI + Math.random() * 2 * Math.PI;
+      const duration = 4000;
+      const startTime = performance.now();
+
+      // ball spin: more spins than wheel (e.g. spins + 3)
+      const ballSpins = spins + 3;
+      const totalBallRotation = ballSpins * 2 * Math.PI + Math.random() * 2 * Math.PI;
+
+      function animate(now) {
+        const elapsed = now - startTime;
+        const t = Math.min(elapsed / duration, 1);
+        const eased = easeOut(t);
+
+        startAngle = totalRotation * eased;
+        // ball goes opposite direction and slows to final position
+        ballAngle = totalBallRotation * (1 - eased);
+
+        drawWheel();
+
+        if (t < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          callback(startAngle % (2 * Math.PI));
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    function angleToNumber(angle) {
+      let index = Math.floor((rouletteNumbers.length - angle / arc)) % rouletteNumbers.length;
+      if (index < 0) index += rouletteNumbers.length;
+      return rouletteNumbers[index];
+    }
+
+    async function fetchBalance() {
+      try {
+        const res = await fetch('/balance');
+        if (!res.ok) throw new Error('Failed to fetch balance');
+        const data = await res.json();
+        document.getElementById('balance').innerText = data.balance;
+      } catch (e) {
+        document.getElementById('balance').innerText = 'Error loading balance';
+      }
+    }
+
+   function parseBets() {
+  const bets = {};
+  const betAmount = parseInt(document.getElementById('betAmount').value, 10);
+
+  // Parse number bets
+  const numberBetRaw = document.getElementById('numberBet').value.trim();
+  if (numberBetRaw) {
+    const nums = numberBetRaw.split(',')
+      .map(s => s.trim())
+      .filter(s => /^\d+$/.test(s))
+      .map(Number)
+      .filter(n => n >= 0 && n <= 36);
+    if (nums.length > 0) {
+      const splitAmount = betAmount / nums.length;
+      bets.number = nums.map(n => [n, splitAmount]);
+    }
+  }
+
+  // Parse color bets
+  const colors = [...document.querySelectorAll('input[name=color]:checked')].map(el => el.value);
+  if (colors.length > 0) {
+    const splitAmount = betAmount / colors.length;
+    bets.color = colors.map(c => [c, splitAmount]);
+  }
+
+  // Parse even/odd bets
+  const evenOdd = [...document.querySelectorAll('input[name=evenodd]:checked')].map(el => el.value);
+  if (evenOdd.length > 0) {
+    const splitAmount = betAmount / evenOdd.length;
+    bets.evenodd = evenOdd.map(eo => [eo, splitAmount]);
+  }
+
+  return bets;
+}
+
+
+document.getElementById('spinBtn').addEventListener('click', async () => {
+  const betAmount = parseInt(document.getElementById('betAmount').value, 10);
+  if (isNaN(betAmount) || betAmount <= 0) {
+    alert('Please enter a valid bet amount.');
+    return;
+  }
+
+  const bets = parseBets();
+  if (Object.keys(bets).length === 0) {
+    alert('Please place at least one bet.');
+    return;
+  }
+
+  document.getElementById('spinBtn').disabled = true;
+  document.getElementById('result').innerText = 'Spinning...';
+
+  spinWheel(async (finalAngle) => {
+    const landed = angleToNumber(finalAngle);
+    try {
+      const res = await fetch('/roulette_bet', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ bet: betAmount, bets })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        document.getElementById('result').innerText = data.error || 'Error placing bet';
+      } else {
+        let spinText = `Result: Number ${landed.num} (${landed.color})\n`;
+        spinText += `You ${data.result_text}! `;
+        if(data.payout > 0) spinText += `Payout: ${data.payout} chips\n`;
+        spinText += `New Balance: ${data.new_balance}`;
+
+        document.getElementById('result').innerText = spinText;
+        document.getElementById('balance').innerText = data.new_balance;
+      }
+    } catch (e) {
+      document.getElementById('result').innerText = 'Network error';
+    }
+    document.getElementById('spinBtn').disabled = false;
+  });
+});
+
+    window.onload = () => {
+      drawWheel();
+      fetchBalance();
+    };
+</script>
+</body>
+</html>

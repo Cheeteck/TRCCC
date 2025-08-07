@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>🎰 Slots | Royal CheetCorp Casino</title>
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+        .container {
+            position: relative; /* or absolute */
+            top: 200px;
+        }
+
+        #balance {
+            font-weight: 700;
+            margin-bottom: 2rem;
+            font-size: 1.25rem;
+            color: #f8f5ec;
+            letter-spacing: 0.05rem;
+        }
+
+        #bet-container {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        #bet-container label {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #a47e3c;
+        }
+        #betAmount {
+            width: 100px;
+            padding: 0.5rem 0.75rem;
+            font-size: 1.1rem;
+            border-radius: 6px;
+            border: 2px solid #a47e3c;
+            background-color: #3c392f;
+            color: #f8f5ec;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+        #betAmount:focus {
+            outline: none;
+            border-color: #f8f5ec;
+            background-color: #47443b;
+        }
+
+        #slot-machine {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 2rem;
+            user-select: none;
+        }
+        .reel {
+            width: 90px;
+            height: 240px;
+            background-color: #a47e3c;
+            border-radius: 12px;
+            box-shadow: inset 0 0 25px #fde3a05f;
+            position: relative;
+            overflow: hidden;
+        }
+        .symbols {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            transition: transform 1s cubic-bezier(0.33, 1, 0.68, 1);
+            will-change: transform;
+        }
+        .symbol {
+            height: 80px;
+            line-height: 80px;
+            font-size: 48px;
+            color: #f8f5ec;
+            font-weight: 900;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+            user-select: none;
+            filter: drop-shadow(0 0 1px #0003);
+        }
+
+        #spinButton {
+            background-color: #a47e3c;
+            color: #f8f5ec;
+            border: none;
+            padding: 12px 50px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 0 15px #a47e3caa;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            user-select: none;
+        }
+        #spinButton:hover:not(:disabled) {
+            background-color: #7a5e27;
+            box-shadow: 0 0 25px #f4d479cc;
+        }
+        #spinButton:disabled {
+            background-color: #444444;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        #result {
+            margin-top: 25px;
+            font-weight: 700;
+            font-size: 1.3rem;
+            min-height: 40px;
+            color: #f8f5ec;
+            user-select: none;
+            word-wrap: break-word;
+            padding: 0 15px;
+        }
+
+        @media (max-width: 500px) {
+            #slot-machine {
+                gap: 8px;
+            }
+            .reel {
+                width: 70px;
+                height: 210px;
+            }
+            .symbol {
+                font-size: 38px;
+                height: 70px;
+                line-height: 70px;
+            }
+            #betAmount {
+                width: 80px;
+                font-size: 1rem;
+            }
+            #spinButton {
+                width: 100%;
+                padding: 12px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="/" class="nav-logo">🏛️ The Royal CheetCorp Casino</a>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/account">Account</a></li>
+            <li><a href="/tos">Terms Of Service</a></li>
+            <li><a href="/privacy">Privacy Policy</a></li>
+        </ul>
+    </div>
+</nav>
+
+<main class="container">
+    <h1>🎰 Slots Machine</h1>
+
+    <div id="balance">Balance: Loading...</div>
+
+    <div id="bet-container">
+        <label for="betAmount">Bet Amount:</label>
+        <input type="number" id="betAmount" min="1" value="10" />
+    </div>
+
+    <div id="slot-machine">
+        <div class="reel"><div class="symbols"></div></div>
+        <div class="reel"><div class="symbols"></div></div>
+        <div class="reel"><div class="symbols"></div></div>
+    </div>
+
+    <button id="spinButton">Spin</button>
+    <div id="result"></div>
+</main>
+
+<script>
+    const symbols = [
+      { id: 'mark',     img: '/symbols/mark.webp' },
+      { id: 'lemon',      img: '/symbols/lemon.png' },
+      { id: 'cheet',       img: '/symbols/cheet.png' },
+      { id: 'snackbag', img: '/symbols/snackbag.png' },
+      { id: 'kam',       img: '/symbols/kam.png' },
+      { id: 'tophat',      img: '/symbols/tophat.png' },
+      { id: 'beaver',     img: '/symbols/beaver.png' },
+    ];
+    const reels = document.querySelectorAll('.reel .symbols');
+    const balanceEl = document.getElementById('balance');
+    const resultDiv = document.getElementById('result');
+    const spinButton = document.getElementById('spinButton');
+    const betInput = document.getElementById('betAmount');
+
+    let userBalance = 0;
+
+    function updateBalance() {
+      balanceEl.textContent = `Balance: ${userBalance.toLocaleString()} chips`;
+    }
+
+    // Build reels symbols stacked 4x for smooth spinning, using images
+    function buildReels() {
+      reels.forEach(symbolsDiv => {
+        symbolsDiv.innerHTML = '';
+        const repeatCount = 4; // duplicate symbols 4 times for smooth loop
+        for (let i = 0; i < repeatCount; i++) {
+          symbols.forEach(symObj => {
+            const div = document.createElement('div');
+            div.className = 'symbol';
+            const img = document.createElement('img');
+            img.src = symObj.img;
+            img.alt = symObj.id;
+            img.style.height = '72px';
+            img.style.display = 'block';
+            img.style.margin = '0 auto';
+            div.appendChild(img);
+            symbolsDiv.appendChild(div);
+          });
+        }
+        symbolsDiv.style.transition = 'none';
+        const symbolHeight = 80;
+        // Set the initial transform offset so first "middle" symbol shows aligned
+        symbolsDiv.style.transform = `translateY(-${(symbols.length + 1) * symbolHeight}px)`;
+      });
+    }
+
+    // Spin animation: move each reel's symbols by transform translateY
+    // results = array of indexes to stop at (0 based)
+    function spinReels(results) {
+      return new Promise(resolve => {
+        const spinTimes = [2000, 2500, 3000];
+        let completed = 0;
+        const symbolHeight = 80;
+        const totalSymbols = symbols.length * 4;
+
+        reels.forEach((symbolsDiv, i) => {
+          const stopIndex = results[i];
+          const spinsCount = 10 + i * 2;
+          const finalTranslateY = -((spinsCount * totalSymbols + stopIndex + 1) * symbolHeight);
+
+          // Clear any previous listeners
+          symbolsDiv.ontransitionend = null;
+
+          // Start from transform=0 without transition
+          symbolsDiv.style.transition = 'none';
+          symbolsDiv.style.transform = 'translateY(0)';
+
+          // Small delay so browser updates style (20ms)
+          setTimeout(() => {
+            // Animate to final translateY with transition
+            symbolsDiv.style.transition = `transform ${spinTimes[i]}ms cubic-bezier(0.33, 1, 0.68, 1)`;
+            symbolsDiv.style.transform = `translateY(${finalTranslateY}px)`;
+          }, 20);
+
+          // After transition ends...
+          symbolsDiv.ontransitionend = () => {
+            symbolsDiv.ontransitionend = null;
+            symbolsDiv.style.transition = 'none';
+            const resetTranslateY = -((stopIndex + 1) * symbolHeight);
+            symbolsDiv.style.transform = `translateY(${resetTranslateY}px)`;
+
+            completed++;
+            if (completed === reels.length) resolve();
+          };
+        });
+      });
+    }
+
+    async function loadBalance() {
+      try {
+        const res = await fetch('/balance');
+        if (!res.ok) throw new Error('Not logged in');
+        const data = await res.json();
+        userBalance = data.balance;
+        updateBalance();
+      } catch (err) {
+        balanceEl.textContent = 'Not logged in';
+        spinButton.disabled = true;
+        resultDiv.textContent = '';
+      }
+    }
+
+    async function spin() {
+      const bet = parseInt(betInput.value);
+      if (isNaN(bet) || bet <= 0) {
+        alert('Please enter a valid bet amount.');
+        betInput.focus();
+        return;
+      }
+      if (bet > userBalance) {
+        alert('Not enough chips!');
+        betInput.focus();
+        return;
+      }
+
+      spinButton.disabled = true;
+      resultDiv.textContent = '';
+
+      try {
+        const res = await fetch('/slots_spin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bet }),
+        });
+
+        if (!res.ok) {
+          const error = await res.json();
+          alert(`Error: ${error.error}`);
+          spinButton.disabled = false;
+          return;
+        }
+
+        const data = await res.json();
+
+        buildReels();
+
+        // Convert backend results (IDs) to symbol indexes
+        const results = data.spin_result.map(id =>
+          symbols.findIndex(s => s.id === id)
+        );
+
+        await spinReels(results);
+
+        if (data.result === 'win') {
+          resultDiv.textContent = `🎉 You won ${data.payout.toLocaleString()} chips!`;
+        } else {
+          resultDiv.textContent = `😞 No win this time. Try again!`;
+        }
+
+        userBalance = data.new_balance;
+        updateBalance();
+      } catch (err) {
+        alert('Error during spin. Please try again.');
+      } finally {
+        spinButton.disabled = false;
+      }
+    }
+
+    // Initialize page state
+    buildReels();
+    loadBalance();
+
+    spinButton.addEventListener('click', spin);
+</script>
+</body>
+</html>

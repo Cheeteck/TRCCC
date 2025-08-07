@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Login | Royal CheetCorp Casino</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+        input {
+          border-radius: 10px;
+          padding: 10px;
+          margin: 8px 0;
+          border: 1px solid #ccc;
+          width: 100%;
+          box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Login</h2>
+    <label for="loginUser"></label>
+    <input id="loginUser" placeholder="Username" autocomplete="off" />
+    <label for="loginPass"></label>
+    <input id="loginPass" type="password" placeholder="Password" autocomplete="off" />
+Press ENTER to continue
+    <div id="loginResult"></div>
+    <button onclick="window.location.href='/register'">Don't have an account? Register</button>
+</div>
+
+<script>
+    async function login() {
+      const user = document.getElementById('loginUser').value.trim();
+      const pass = document.getElementById('loginPass').value;
+
+      if (!user || !pass) {
+        const resultDiv = document.getElementById('loginResult');
+        resultDiv.style.color = '#f88';
+        resultDiv.innerText = "Please enter username and password.";
+        return;
+      }
+
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username: user, password: pass})
+      });
+
+      const data = await res.json();
+      const resultDiv = document.getElementById('loginResult');
+
+      if (res.ok) {
+        resultDiv.style.color = '#8f8';
+        resultDiv.innerText = data.message;
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+      } else {
+        resultDiv.style.color = '#f88';
+        resultDiv.innerText = data.error || 'Login failed';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') login();
+      });
+    });
+</script>
+</body>
+</html>
